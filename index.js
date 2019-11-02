@@ -3,7 +3,7 @@
 let Html = Bedrock.Html;
 
 let main = function () {
-    Bedrock.Http.get ("https://bedrock.brettonw.com/api?event=fetch&url=http://www.supertool.com/forsale/november2019list.html", function (queryResult) {
+    Bedrock.Http.get ("https://bedrock.brettonw.com/api?event=fetch&url=http://www.supertool.com/forsale/march2019list.html", function (queryResult) {
         console.log ("Loaded.");
 
         // records is coming in as a JSON object with the text escaped. we first have to
@@ -23,6 +23,27 @@ let main = function () {
         content = content.substring (content.indexOf ("**\n") + 3);
         console.log (content);
 
+        let getImageId = function (url) {
+            let matches = url.match (/([^\/]*)\.jpg/i);
+            if ((matches != null) && (matches.length > 1)) {
+                console.log ("Image Id = " + matches[1]);
+                return matches[1];
+            }
+            return "UNKNOWN";
+        }
+
+        let images = {};
+        let addRecordToImage = function (record, imageUrl) {
+            let imageId = getImageId (imageUrl);
+            if (!(imageId in images)) {
+                images[imageId] = {
+                    imageUrl: imageUrl,
+                    records: []
+                }
+            }
+            images[imageId].records.push (record);
+        }
+
         // loop over all the lines...
         let records = [];
         let currentRecord = null;
@@ -30,27 +51,29 @@ let main = function () {
         let lines = content.split (/\n/);
         for (let line of lines) {
             if (line.length > 0) {
-                // look for a tool code
-                let matches = line.match (/^  [A-Z]+\d+/);
-                if ((matches != null) && (matches.length > 0)) {
-                    // this starts the record
-                    let id = matches[0].substring (2);
+                if (currentRecord == null) {
+                    // look for a tool code
+                    let matches = line.match (/^  [A-Z]+\d+/);
+                    if ((matches != null) && (matches.length > 0)) {
+                        // this starts the record
+                        let id = matches[0].substring (2);
 
-                    // the "body" of each description is indented. the "id" occupies
-                    // at least 4 characters, padded with a space at the end. there
-                    // are two spaces at the beginning of the line, and at least one
-                    // more after that...
-                    indent = Math.max (id.length, 4) + 3;
-                    console.log (id);
-                    currentRecord = {
-                        id: id,
-                        images: "",
-                        price: 0,
-                        description: "",
-                        title: "",
-                        maker: "",
-                        condition: ""
-                    };
+                        // the "body" of each description is indented. the "id" occupies
+                        // at least 4 characters, padded with a space at the end. there
+                        // are two spaces at the beginning of the line, and at least one
+                        // more after that...
+                        indent = Math.max (id.length, 4) + 3;
+                        console.log (id);
+                        currentRecord = {
+                            id: id,
+                            images: "",
+                            price: 0,
+                            description: "",
+                            title: "",
+                            maker: "",
+                            condition: ""
+                        };
+                    }
                 }
 
                 // these are only valid if we are in a record...
@@ -62,9 +85,11 @@ let main = function () {
                     }
 
                     // look for a link
-                    matches = line.match (/<a href="(http:.*\.jpg)"/);
+                    let matches = line.match (/<a href="(http:.*\.jpg)"/);
                     if ((matches != null) && (matches.length > 1)) {
-                        currentRecord.images += "<a target=\"_blank\" href=\"" + matches[1] + "\"><img src=\"" + matches[1] + "\" style=\"height:100%;padding:3px;\"></a>";
+                        let imageUrl = matches[1];
+                        addRecordToImage (currentRecord, imageUrl);
+                        currentRecord.images += "<a target=\"_blank\" href=\"" + imageUrl + "\"><img src=\"" + imageUrl + "\" style=\"height:100%;padding:3px;\"></a>";
                     }
 
                     // look for a price
