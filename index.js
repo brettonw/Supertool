@@ -3,7 +3,11 @@
 let Html = Bedrock.Html;
 
 let main = function () {
-    Bedrock.Http.get ("https://bedrock.brettonw.com/api?event=fetch&url=http://www.supertool.com/forsale/march2019list.html", function (queryResult) {
+    loadSalesList ("november", 2019);
+}
+
+let loadSalesList = function (month, year) {
+    Bedrock.Http.get ("https://bedrock.brettonw.com/api?event=fetch&url=http://www.supertool.com/forsale/" + month + year + "list.html", function (queryResult) {
         console.log ("Loaded.");
 
         // records is coming in as a JSON object with the text escaped. we first have to
@@ -19,7 +23,7 @@ let main = function () {
             ;
 
         // then think about how to convert it into a database
-        content = content.replace (/<br>/gi, "\n").replace (/<\/?pre>/gi, "").replace (/&nbsp;/gi, " ").replace (/\s+\n/g, "\n");
+        content = content.replace (/<br>/gi, "\n").replace (/<\/?pre>/gi, "").replace (/&nbsp;/gi, " ").replace (/&amp;/gi, "&").replace (/\s+\n/g, "\n");
         content = content.substring (content.indexOf ("**\n") + 3);
         console.log (content);
 
@@ -32,25 +36,31 @@ let main = function () {
             return "UNKNOWN";
         }
 
-        let images = {};
+        // build a spider-like graph connecting the images and records
+        let imageIndex = {};
         let addRecordToImage = function (record, imageUrl) {
             let imageId = getImageId (imageUrl);
-            if (!(imageId in images)) {
-                images[imageId] = {
+            if (!(imageId in imageIndex)) {
+                imageIndex[imageId] = {
+                    id: imageId,
                     imageUrl: imageUrl,
-                    records: []
+                    recordIds: []
                 }
             }
-            images[imageId].records.push (record);
+            imageIndex[imageId].recordIds.push (record.id);
+            record.imageIds.push (imageId);
+            console.log ("Add record (" + record.id + ") to image (" + imageId + ") - " + imageIndex[imageId].recordIds.length + " links");
         }
 
         // loop over all the lines...
         let records = [];
+        let recordIndex = {};
         let currentRecord = null;
         let indent;
         let lines = content.split (/\n/);
         for (let line of lines) {
             if (line.length > 0) {
+                // if we don't have a current tool...
                 if (currentRecord == null) {
                     // look for a tool code
                     let matches = line.match (/^  [A-Z]+\d+/);
@@ -64,12 +74,12 @@ let main = function () {
                         // more after that...
                         indent = Math.max (id.length, 4) + 3;
                         console.log (id);
-                        currentRecord = {
+                        recordIndex[id] = currentRecord = {
                             id: id,
-                            images: "",
-                            price: 0,
-                            description: "",
+                            imageIds: [],
                             title: "",
+                            description: "",
+                            price: 0,
                             maker: "",
                             condition: ""
                         };
@@ -89,7 +99,6 @@ let main = function () {
                     if ((matches != null) && (matches.length > 1)) {
                         let imageUrl = matches[1];
                         addRecordToImage (currentRecord, imageUrl);
-                        currentRecord.images += "<a target=\"_blank\" href=\"" + imageUrl + "\"><img src=\"" + imageUrl + "\" style=\"height:100%;padding:3px;\"></a>";
                     }
 
                     // look for a price
@@ -100,9 +109,41 @@ let main = function () {
                         // get the title from the beginning of the description
                         let semicolon = currentRecord.description.indexOf (";");
                         if (semicolon > 0) {
-                            currentRecord.title = "<div class=\"title-display-box\">" + currentRecord.description.substring (0, semicolon) + "</div>";
+                            currentRecord.title = currentRecord.description.substring (0, semicolon);
+                            currentRecord.description = currentRecord.description.substring (semicolon + 1).trim ();
+                        } else {
+                            currentRecord.title = "UNTITLED";
                         }
-                        currentRecord.description = "<div class=\"title-display-box\">" + currentRecord.description.substring (semicolon) + "</div>";
+
+                        // de-hyphenate where the original text was wrapped
+                        currentRecord.description = currentRecord.description.replace (/([^-])- /, "$1");
+
+                        // try to find the maker, Stanley is obvious
+                        if (currentRecord.id.match (/^ST\d+$/)) {
+                            currentRecord.maker = "Stanley";
+                        } else {
+                            // is it in the title?
+                        }
+
+                        // try to find the picture location
+                        let locMatches = currentRecord.description.match (/;\s*([^;]+):/);
+                        if ((locMatches != null) && (locMatches.length > 1)) {
+                            let position = locMatches[1].toLowerCase ();
+                            let wordCount = position.split (" ").length;
+                            if (wordCount < 5) {
+                                if (position.includes ("top") || position.includes ("bottom") || position.includes ("left") || position.includes ("right") || position.includes ("middle")) {
+                                    console.log ("POSITION: " + locMatches[1]);
+                                    currentRecord.position = position;
+
+                                    // and strip the position off the end of the description
+                                    currentRecord.description = currentRecord.description.replace (/;\s*[^;]+:/, "");
+                                } else {
+                                    console.log ("NO POSITION FOUND (missing keywords): " + position);
+                                }
+                            } else {
+                                console.log ("NO POSITION FOUND (length): " + position);
+                            }
+                        }
 
                         // this finishes the record
                         records.push (currentRecord);
@@ -115,39 +156,63 @@ let main = function () {
 
         console.log ("Found " + records.length + " records");
 
-        /*
+        // recursive graph traversal functions
+        let touchedRecordIds = {};
+        let touchedImageIds = {};
+        let collectImageIdsFromRecordId = function (recordId, recordIds, imageIds) {
+            if (! (recordId in touchedRecordIds)) {
+                //console.log ("Checking Record Id: " + recordId);
+                let record = recordIds[recordId] = touchedRecordIds[recordId] = recordIndex[recordId];
 
-        // sort the records as an example
-        let CF = Bedrock.CompareFunctions;
-        records = Bedrock.DatabaseOperations.Sort.new ({ fields:[
-                { name:"C", asc:true, type: CF.ALPHABETIC },
-                { name:"B", asc:true, type: CF.ALPHABETIC },
-                { name:"RA", asc:true, type: CF.ALPHABETIC },
-                { name:"Dec", asc:true, type: CF.ALPHABETIC }
-            ] }).perform (records);
-        */
-
-        // build the database filter
-        Bedrock.Database.Container.new ({
-            database: records,
-            filterValues: [{ field: "id" }],
-            onUpdate: function (db) {
-                Bedrock.PagedDisplay.Table.new ({
-                    container: "bedrock-database-display",
-                    records: db,
-                    select: [
-                        { name: "id", displayName: "ID", width: 0.1 },
-                        { name: "price", displayName: "Price", width: 0.1 },
-                        { name: "title", displayName: "Title", width: 0.25 },
-                        { name: "images", displayName: "Images", width: 0.5 }
-                    ],
-                    onclick: function (record) {
-                        //document.getElementById("bedrock-record-display").innerHTML = show ("RA", "(RA: ") + show ("Dec", ", Dec: ") + ")" + show ("C") + show ("B", "-") + show ("N");
-                        return true;
-                    }
-                }).makeTableWithHeader ();
+                // loop over all of the imageIds in that record
+                for (let imageId of record.imageIds) {
+                    collectRecordIdsFromImageId (imageId, recordIds, imageIds);
+                }
             }
-        });
+            return Object.keys (imageIds).length;
+        }
+
+        let collectRecordIdsFromImageId = function (imageId, recordIds, imageIds) {
+            if (!(imageId in touchedImageIds)) {
+                //console.log ("Checking Image Id: " + imageId);
+                let image = imageIds[imageId] = touchedImageIds[imageId] = imageIndex[imageId];
+
+                // get all the records associated with this image
+                for (let recordId of image.recordIds) {
+                    collectImageIdsFromRecordId (recordId, recordIds, imageIds);
+                }
+            }
+        }
+
+        // build the image group displays by walking over the records in their natural order
+        let Bldr = Bedrock.Html.Builder;
+        let display = Bldr.begin ("div", {}).begin ("h2", { innerHTML: month.charAt(0).toUpperCase() + month.slice(1) + " " + year }).end ();
+        for (let record of records) {
+            let recordIds = {};
+            let imageIds = {};
+            if (collectImageIdsFromRecordId (record.id, recordIds, imageIds) > 0) {
+                let cluster = display.begin ("div", {});
+                console.log ("CLUSTER");
+
+                let clusterImages = cluster.begin ("div", { style: {height: "100px", verticalAlign: "middle"}});
+                for (let imageId of Object.keys(imageIds).sort ()) {
+                    console.log ("  Image Id: " + imageId);
+                    let image = imageIndex[imageId];
+                    clusterImages.begin ("img", {src: image.imageUrl, style: {height:"90%", margin: "4px"}}).end ();
+                }
+                clusterImages.end ();
+
+                let clusterRecords = cluster.begin ("div", {});
+                for (let recordId of Object.keys(recordIds).sort ()) {
+                    console.log ("  Record Id: " + recordId);
+                    let displayRecord = recordIndex[recordId];
+                    clusterRecords.begin ("div", { innerHTML: recordId + ": " + (("position" in displayRecord) ? (" (" + displayRecord.position + ") ") : "") + displayRecord.title }).end ();
+                }
+                clusterRecords.end ();
+                display.end ();
+            }
+        }
+        document.getElementById ("image-group-display").appendChild (display.end ());
     });
 };
 
