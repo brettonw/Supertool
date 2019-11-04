@@ -63,6 +63,7 @@ let loadSalesList = function (monthyear) {
         content = content
             .replace (/<br>/gi, "\n")
             .replace (/<meta [^>]+>/gi, "")
+            .replace (/<span [^>]+><\/span>/gi, "")
             .replace (/<\/?pre>/gi, "")
             .replace (/&nbsp;/gi, " ")
             .replace (/&amp;/gi, "&")
