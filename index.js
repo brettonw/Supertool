@@ -246,7 +246,7 @@ let loadSalesList = function (monthyear) {
                     let image = imageIndex[imageId];
                     clusterImages
                         .begin ("a", { href: image.imageUrl, target: "_blank" })
-                            .begin ("img", {src: image.imageUrl, style: {height:"140px", margin: "0 5px 0 0"}}).end ()
+                            .begin ("img", {src: image.imageUrl, style: {maxHeight:"140px", maxWidth: "500px", height: "auto", width: "auto", margin: "0 5px 0 0"}}).end ()
                         .end ();
                 }
                 clusterImages.end ();
