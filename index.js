@@ -7,8 +7,6 @@ let main = function () {
     let now = new Date ();
     let months = [ "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december" ];
     let defaultOption = months[now.getMonth()] + now.getFullYear();
-    let selectElement = document.getElementById ("salesListSelect");
-    selectElement.value = defaultOption;
     loadSalesList (defaultOption);
 };
 
@@ -22,12 +20,6 @@ let formatMoney = function (amount) {
 
     let dollars = (j ? i.substr (0, j) + thousands : '') + i.substr (j).replace (/(\d{3})(?=\d)/g, "$1" + thousands) + (decimalCount ? decimal + Math.abs (amount - i).toFixed (decimalCount).slice (2) : "");
     return "$" + ((amount < 0) ? "(" + dollars + ")" : dollars);
-};
-
-let selectSalesList = function () {
-    let selectElement = document.getElementById("salesListSelect");
-    let selection = selectElement.options[selectElement.selectedIndex].value;
-    loadSalesList (selection);
 };
 
 let loadSalesList = function (monthyear) {
