@@ -1,5 +1,5 @@
 # Supertool
-Crawl [Supertool][http://www.supertool.com/] and present their for monthly sale list in a more visual format.
+Crawl (Supertool)[http://www.supertool.com/] and present their for monthly sale list in a more visual format.
 
 Try it at https://brettonw.github.io/Supertool/
 
