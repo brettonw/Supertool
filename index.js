@@ -160,6 +160,7 @@ let processSalesList = function (queryResult, month, year, sourceUrl) {
     // loop over all the lines...
     let records = [];
     let recordIndex = {};
+    let sumTotal = 0;
     let currentRecord = null;
     let indent;
     let lines = content.split (/\n/);
@@ -210,6 +211,7 @@ let processSalesList = function (queryResult, month, year, sourceUrl) {
                 matches = line.match (/\$(\d+\.\d\d)\s*$/);
                 if ((matches != null) && (matches.length > 1)) {
                     currentRecord.price = matches[1];
+                    sumTotal += parseFloat(currentRecord.price);
 
                     // de-hyphenate where the original text was wrapped
                     currentRecord.description = currentRecord.description.replace (/([^-])- /, "$1");
@@ -259,7 +261,7 @@ let processSalesList = function (queryResult, month, year, sourceUrl) {
         }
     }
 
-    console.log ("Found " + records.length + " records");
+    console.log ("Found " + records.length + " tools for sale, totalling " + formatMoney(sumTotal) + " (Average price per tool is " + formatMoney (sumTotal / records.length) + ")");
 
     // recursive graph traversal functions
     let touchedRecordIds = {};
