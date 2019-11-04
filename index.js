@@ -2,12 +2,30 @@
 
 let Html = Bedrock.Html;
 
+let archive = {
+    "2019": [
+        "2019jan", "2019febr", "march2019", "2019apr", "2019may", "june2019", "2019july", "2019augu", "2019septem", "october2019", "november2019", "xx"
+    ],
+    "2018": [
+        "xx", "xx", "xx", "xx", "xx", "xx", "xx", "xx", "xx", "novem2018", "dec2018"
+    ]
+};
+
+let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+
 let main = function () {
     // get the current date
     let now = new Date ();
-    let months = [ "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december" ];
-    let defaultOption = months[now.getMonth()] + now.getFullYear();
+    let defaultOption = archive[now.getFullYear()][now.getMonth()];
+    let selectElement = document.getElementById ("salesListSelect");
+    selectElement.value = defaultOption;
     loadSalesList (defaultOption);
+};
+
+let selectSalesList = function () {
+    let selectElement = document.getElementById ("salesListSelect");
+    let selection = selectElement.options[selectElement.selectedIndex].value;
+    loadSalesList (selection);
 };
 
 let formatMoney = function (amount) {
@@ -195,7 +213,7 @@ let loadSalesList = function (monthyear) {
                 }
             }
             return Object.keys (imageIds).length;
-        }
+        };
 
         let collectRecordIdsFromImageId = function (imageId, recordIds, imageIds) {
             if (!(imageId in touchedImageIds)) {
@@ -207,12 +225,12 @@ let loadSalesList = function (monthyear) {
                     collectImageIdsFromRecordId (recordId, recordIds, imageIds);
                 }
             }
-        }
+        };
 
         // build the image group displays by walking over the records in their natural order
         let yearIndex = monthyear.indexOf("20");
-        let month = monthyear.substring (0, yearIndex);
-        let year = monthyear.substring (yearIndex);
+        let year = monthyear.substring (yearIndex, yearIndex + 4);
+        let month = months[archive[year].indexOf(monthyear)];
         let display = Bedrock.Html.Builder.begin ("div", { style: { fontSize: "12px" } }).begin ("h2", { innerHTML: month.charAt(0).toUpperCase() + month.slice(1) + " " + year }).end ();
         for (let record of records) {
             let recordIds = {};
