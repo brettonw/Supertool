@@ -42,10 +42,9 @@ let formatMoney = function (amount) {
 
 let loadSalesList = function (monthyear) {
     let target = document.getElementById ("image-group-display");
-    target.innerHTML = "LOADING...";
-    target.scrollIntoView();
+    document.getElementById ("loading-div").style.display = "block";
     Bedrock.Http.get ("https://bedrock.brettonw.com/api?event=fetch&url=http://www.supertool.com/forsale/" + monthyear + "list.html", function (queryResult) {
-        console.log ("Loaded.");
+        console.log ("Loaded Source.");
 
         // records is coming in as a JSON object with the text escaped. we first have to
         // reconstruct the original...
@@ -74,7 +73,7 @@ let loadSalesList = function (monthyear) {
         let getImageId = function (url) {
             let matches = url.match (/([^\/]*)\.jpg/i);
             if ((matches != null) && (matches.length > 1)) {
-                console.log ("Image Id = " + matches[1]);
+                //console.log ("Image Id = " + matches[1]);
                 return matches[1];
             }
             return "UNKNOWN";
@@ -93,7 +92,7 @@ let loadSalesList = function (monthyear) {
             }
             imageIndex[imageId].recordIds.push (record.id);
             record.imageIds.push (imageId);
-            console.log ("Add record (" + record.id + ") to image (" + imageId + ") - " + imageIndex[imageId].recordIds.length + " links");
+            //console.log ("Add record (" + record.id + ") to image (" + imageId + ") - " + imageIndex[imageId].recordIds.length + " links");
         };
 
         // loop over all the lines...
@@ -117,7 +116,7 @@ let loadSalesList = function (monthyear) {
                         // are two spaces at the beginning of the line, and at least one
                         // more after that...
                         indent = Math.max (id.length, 4) + 3;
-                        console.log (id);
+                        //console.log (id);
                         recordIndex[id] = currentRecord = {
                             id: id,
                             imageIds: [],
@@ -176,16 +175,16 @@ let loadSalesList = function (monthyear) {
                             let wordCount = position.split (" ").length;
                             if (wordCount < 5) {
                                 if (position.includes ("top") || position.includes ("bottom") || position.includes ("left") || position.includes ("right") || position.includes ("middle")) {
-                                    console.log ("POSITION: " + locMatches[1]);
+                                    //console.log ("POSITION: " + locMatches[1]);
                                     currentRecord.position = position;
 
                                     // and strip the position off the end of the description
                                     currentRecord.description = currentRecord.description.replace (/;\s*[^;]+:/, "");
                                 } else {
-                                    console.log ("NO POSITION FOUND (missing keywords): " + position);
+                                    //console.log ("NO POSITION FOUND (missing keywords): " + position);
                                 }
                             } else {
-                                console.log ("NO POSITION FOUND (length): " + position);
+                                //console.log ("NO POSITION FOUND (length): " + position);
                             }
                         }
 
@@ -228,32 +227,39 @@ let loadSalesList = function (monthyear) {
             }
         };
 
+        // set the target
+        console.log ("Setting target");
+        while (target.lastElementChild) {
+            target.removeChild (target.lastElementChild);
+        }
+
         // build the image group displays by walking over the records in their natural order
         let yearIndex = monthyear.indexOf("20");
         let year = monthyear.substring (yearIndex, yearIndex + 4);
         let month = months[archive[year].indexOf(monthyear)];
-        let display = Bedrock.Html.Builder.begin ("div", { style: { fontSize: "12px" } }).begin ("h2", { innerHTML: month.charAt(0).toUpperCase() + month.slice(1) + " " + year }).end ();
+        target.appendChild (Bedrock.Html.Builder.begin ("h2", { innerHTML: month.charAt(0).toUpperCase() + month.slice(1) + " " + year }).end ());
+
         for (let record of records) {
             let recordIds = {};
             let imageIds = {};
             if (collectImageIdsFromRecordId (record.id, recordIds, imageIds) > 0) {
-                let cluster = display.begin ("div", { style: { margin: "5px 0", padding: "8px", borderWidth: "1px", borderColor: "gray", borderStyle: "solid"} });
-                console.log ("CLUSTER");
+                let cluster = Bedrock.Html.Builder.begin ("div", { style: { margin: "5px 0", padding: "8px", borderWidth: "1px", borderColor: "gray", borderStyle: "solid"} });
+                //console.log ("CLUSTER");
 
                 let clusterImages = cluster.begin ("div", { style: {verticalAlign: "middle", textAlign: "center" }});
                 for (let imageId of Object.keys(imageIds).sort ()) {
-                    console.log ("  Image Id: " + imageId);
+                    //console.log ("  Image Id: " + imageId);
                     let image = imageIndex[imageId];
                     clusterImages
                         .begin ("a", { href: image.imageUrl, target: "_blank" })
-                            .begin ("img", {src: image.imageUrl, style: {maxHeight:"140px", maxWidth: "500px", height: "auto", width: "auto", margin: "0 5px 0 0"}}).end ()
+                            .begin ("img", {src: image.imageUrl, style: { borderWidth: "1px", borderStyle: "solid", borderColor: "blue", maxHeight:"140px", maxWidth: "500px", height: "auto", width: "auto", margin: "0 5px 0 0"}}).end ()
                         .end ();
                 }
                 clusterImages.end ();
 
                 let clusterRecords = cluster.begin ("div").begin ("table");
                 for (let recordId of Object.keys(recordIds).sort ()) {
-                    console.log ("  Record Id: " + recordId);
+                    //console.log ("  Record Id: " + recordId);
                     let displayRecord = recordIndex[recordId];
 
                     // make bullets of the description
@@ -278,16 +284,13 @@ let loadSalesList = function (monthyear) {
                         .end ();
                 }
                 clusterRecords.end ().end ();
-                display.end ();
+                target.appendChild (cluster.end ());
             }
         }
 
         // set the target
-        target.innerHTML = "";
-        while (target.lastElementChild) {
-            target.removeChild (target.lastElementChild);
-        }
-        target.appendChild (display.end ());
+        console.log ("Finished");
+        document.getElementById ("loading-div").style.display = "none";
         target.scrollIntoView ();
     });
 };
