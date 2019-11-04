@@ -3,11 +3,38 @@
 let Html = Bedrock.Html;
 
 let main = function () {
-    loadSalesList ("november", 2019);
-}
+    // get the current date
+    let now = new Date ();
+    let months = [ "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december" ];
+    let defaultOption = months[now.getMonth()] + now.getFullYear();
+    let selectElement = document.getElementById ("salesListSelect");
+    selectElement.value = defaultOption;
+    loadSalesList (defaultOption);
+};
 
-let loadSalesList = function (month, year) {
-    Bedrock.Http.get ("https://bedrock.brettonw.com/api?event=fetch&url=http://www.supertool.com/forsale/" + month + year + "list.html", function (queryResult) {
+let formatMoney = function (amount) {
+    const decimalCount = 2;
+    const decimal = ".";
+    const thousands = ",";
+
+    let i = parseInt (amount = Math.abs (Number (amount) || 0).toFixed (decimalCount)).toString ();
+    let j = (i.length > 3) ? i.length % 3 : 0;
+
+    let dollars = (j ? i.substr (0, j) + thousands : '') + i.substr (j).replace (/(\d{3})(?=\d)/g, "$1" + thousands) + (decimalCount ? decimal + Math.abs (amount - i).toFixed (decimalCount).slice (2) : "");
+    return "$" + ((amount < 0) ? "(" + dollars + ")" : dollars);
+};
+
+let selectSalesList = function () {
+    let selectElement = document.getElementById("salesListSelect");
+    let selection = selectElement.options[selectElement.selectedIndex].value;
+    loadSalesList (selection);
+};
+
+let loadSalesList = function (monthyear) {
+    let target = document.getElementById ("image-group-display");
+    target.innerHTML = "LOADING...";
+    target.scrollIntoView();
+    Bedrock.Http.get ("https://bedrock.brettonw.com/api?event=fetch&url=http://www.supertool.com/forsale/" + monthyear + "list.html", function (queryResult) {
         console.log ("Loaded.");
 
         // records is coming in as a JSON object with the text escaped. we first have to
@@ -23,7 +50,13 @@ let loadSalesList = function (month, year) {
             ;
 
         // then think about how to convert it into a database
-        content = content.replace (/<br>/gi, "\n").replace (/<\/?pre>/gi, "").replace (/&nbsp;/gi, " ").replace (/&amp;/gi, "&").replace (/\s+\n/g, "\n");
+        content = content
+            .replace (/<br>/gi, "\n")
+            .replace (/<meta [^>]+>/gi, "")
+            .replace (/<\/?pre>/gi, "")
+            .replace (/&nbsp;/gi, " ")
+            .replace (/&amp;/gi, "&")
+            .replace (/\s+\n/g, "\n");
         content = content.substring (content.indexOf ("**\n") + 3);
         console.log (content);
 
@@ -34,7 +67,7 @@ let loadSalesList = function (month, year) {
                 return matches[1];
             }
             return "UNKNOWN";
-        }
+        };
 
         // build a spider-like graph connecting the images and records
         let imageIndex = {};
@@ -50,7 +83,7 @@ let loadSalesList = function (month, year) {
             imageIndex[imageId].recordIds.push (record.id);
             record.imageIds.push (imageId);
             console.log ("Add record (" + record.id + ") to image (" + imageId + ") - " + imageIndex[imageId].recordIds.length + " links");
-        }
+        };
 
         // loop over all the lines...
         let records = [];
@@ -106,6 +139,9 @@ let loadSalesList = function (month, year) {
                     if ((matches != null) && (matches.length > 1)) {
                         currentRecord.price = matches[1];
 
+                        // de-hyphenate where the original text was wrapped
+                        currentRecord.description = currentRecord.description.replace (/([^-])- /, "$1");
+
                         // get the title from the beginning of the description
                         let semicolon = currentRecord.description.indexOf (";");
                         if (semicolon > 0) {
@@ -114,9 +150,6 @@ let loadSalesList = function (month, year) {
                         } else {
                             currentRecord.title = "UNTITLED";
                         }
-
-                        // de-hyphenate where the original text was wrapped
-                        currentRecord.description = currentRecord.description.replace (/([^-])- /, "$1");
 
                         // try to find the maker, Stanley is obvious
                         if (currentRecord.id.match (/^ST\d+$/)) {
@@ -185,34 +218,66 @@ let loadSalesList = function (month, year) {
         }
 
         // build the image group displays by walking over the records in their natural order
-        let Bldr = Bedrock.Html.Builder;
-        let display = Bldr.begin ("div", {}).begin ("h2", { innerHTML: month.charAt(0).toUpperCase() + month.slice(1) + " " + year }).end ();
+        let yearIndex = monthyear.indexOf("20");
+        let month = monthyear.substring (0, yearIndex);
+        let year = monthyear.substring (yearIndex);
+        let display = Bedrock.Html.Builder.begin ("div", { style: { fontSize: "12px" } }).begin ("h2", { innerHTML: month.charAt(0).toUpperCase() + month.slice(1) + " " + year }).end ();
         for (let record of records) {
             let recordIds = {};
             let imageIds = {};
             if (collectImageIdsFromRecordId (record.id, recordIds, imageIds) > 0) {
-                let cluster = display.begin ("div", {});
+                let cluster = display.begin ("div", { style: { margin: "5px 0", padding: "8px", borderWidth: "1px", borderColor: "gray", borderStyle: "solid"} });
                 console.log ("CLUSTER");
 
-                let clusterImages = cluster.begin ("div", { style: {height: "100px", verticalAlign: "middle"}});
+                let clusterImages = cluster.begin ("div", { style: {verticalAlign: "middle", textAlign: "center" }});
                 for (let imageId of Object.keys(imageIds).sort ()) {
                     console.log ("  Image Id: " + imageId);
                     let image = imageIndex[imageId];
-                    clusterImages.begin ("img", {src: image.imageUrl, style: {height:"90%", margin: "4px"}}).end ();
+                    clusterImages
+                        .begin ("a", { href: image.imageUrl, target: "_blank" })
+                            .begin ("img", {src: image.imageUrl, style: {height:"140px", margin: "0 5px 0 0"}}).end ()
+                        .end ();
                 }
                 clusterImages.end ();
 
-                let clusterRecords = cluster.begin ("div", {});
+                let clusterRecords = cluster.begin ("div").begin ("table");
                 for (let recordId of Object.keys(recordIds).sort ()) {
                     console.log ("  Record Id: " + recordId);
                     let displayRecord = recordIndex[recordId];
-                    clusterRecords.begin ("div", { innerHTML: recordId + ": " + (("position" in displayRecord) ? (" (" + displayRecord.position + ") ") : "") + displayRecord.title }).end ();
+
+                    // make bullets of the description
+                    let bullets = displayRecord.description.split (";");
+                    let description = "<ul>";
+                    for (let bullet of bullets) {
+                        bullet = bullet.trim ();
+                        description += "<li>" + bullet.charAt (0).toUpperCase () + bullet.slice (1) + "</li>";
+                    }
+                    description += "<ul>";
+
+                    clusterRecords
+                        .begin ("tr", { style: { height: "12px" } }).end ()
+                        .begin ("tr", { style: { verticalAlign: "top" } })
+                        .begin ("td", { style: {width: "50px"}, innerHTML: recordId }).end ()
+                        .begin ("td", { style: {width: "65px"}, innerHTML: formatMoney (displayRecord.price) }).end ()
+                        .begin ("td", { style: {width: "550px"} })
+                            .begin ("div", { innerHTML: displayRecord.title, style: {fontWeight: "bold" } }).end ()
+                            .begin ("div", { innerHTML: description }).end ()
+                            .end ()
+                        .begin ("td", { style: {width: "100px", fontSize: "10px", fontStyle: "italic", textAlign: "right" }, innerHTML: ("position" in displayRecord) ? displayRecord.position : "" }).end ()
+                        .end ();
                 }
-                clusterRecords.end ();
+                clusterRecords.end ().end ();
                 display.end ();
             }
         }
-        document.getElementById ("image-group-display").appendChild (display.end ());
+
+        // set the target
+        target.innerHTML = "";
+        while (target.lastElementChild) {
+            target.removeChild (target.lastElementChild);
+        }
+        target.appendChild (display.end ());
+        target.scrollIntoView ();
     });
 };
 

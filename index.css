@@ -24,7 +24,7 @@ body.noScroll {
 }
 
 body {
-    max-width: 1400px;
+    max-width: 800px;
 }
 
 div[id="selected"] {
@@ -64,4 +64,10 @@ div[id="selected"] {
     line-height:20px;
     word-wrap:break-word;
     vertical-align: middle;
+}
+
+.par {
+    font-size: 16px;
+    font-family: Times, serif;
+    margin: 12px 0;
 }
