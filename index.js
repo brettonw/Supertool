@@ -43,7 +43,8 @@ let formatMoney = function (amount) {
 let loadSalesList = function (monthyear) {
     let target = document.getElementById ("image-group-display");
     document.getElementById ("loading-div").style.display = "block";
-    Bedrock.Http.get ("https://bedrock.brettonw.com/api?event=fetch&url=http://www.supertool.com/forsale/" + monthyear + "list.html", function (queryResult) {
+    let sourceUrl = "http://www.supertool.com/forsale/" + monthyear + "list.html";
+    Bedrock.Http.get ("https://bedrock.brettonw.com/api?event=fetch&url=" + sourceUrl, function (queryResult) {
         console.log ("Loaded Source.");
 
         // records is coming in as a JSON object with the text escaped. we first have to
@@ -237,7 +238,7 @@ let loadSalesList = function (monthyear) {
         let yearIndex = monthyear.indexOf("20");
         let year = monthyear.substring (yearIndex, yearIndex + 4);
         let month = months[archive[year].indexOf(monthyear)];
-        target.appendChild (Bedrock.Html.Builder.begin ("h2", { innerHTML: month.charAt(0).toUpperCase() + month.slice(1) + " " + year }).end ());
+        target.appendChild (Bedrock.Html.Builder.begin ("h2").begin ("a", { href: sourceUrl, target:"_blank", style: { textDecoration: "none"}, title: "View original source", innerHTML: month.charAt(0).toUpperCase() + month.slice(1) + " " + year }).end ().end ());
 
         for (let record of records) {
             let recordIds = {};
