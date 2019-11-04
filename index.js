@@ -3,14 +3,9 @@
 let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
 let main = function () {
-    // get the current date
-    let now = new Date ();
-    let year = now.getFullYear ();
-    let monthIndex = now.getMonth ();
-
     // the first one will automatically be selected...
-    buildSalesListSelect (monthIndex, year);
-    findSalesList (monthIndex + 1, year);
+    buildSalesListSelect ();
+    selectSalesList ();
 };
 
 let formatMoney = function (amount) {
@@ -72,13 +67,17 @@ let findSalesList = function (monthIndex, year) {
                 if (tryResult.status === "ok") {
                     console.log ("Found sales list for " + ucFirst (monthName) + " " + year + " at " + sourceUrl);
                     processSalesList (tryResult, monthName, year, sourceUrl);
+
+                    document.getElementById ("salesListSelect").value = monthIndex + "/" + year;
+
                 } else {
                     tryNext (++tryIndex);
                 }
             });
         } else {
-            console.log ("Coudn't find sales list for " + ucFirst (monthName) + " " + year);
-            loadingDiv.innerHTML = "FAILED";
+            let message = "Couldn't find sales list for " + ucFirst (monthName) + " " + year;
+            console.log (message);
+            loadingDiv.innerHTML = message;
 
             // in some cases, it might be into a given month but the new list has not been
             // released yet, so we want to fall back to last month's list... but only do this
@@ -96,10 +95,22 @@ let findSalesList = function (monthIndex, year) {
     tryNext (0);
 };
 
-let buildSalesListSelect = function (monthIndex, year) {
+let buildSalesListSelect = function () {
+    // get the current date
+    let now = new Date ();
+    let year = now.getFullYear ();
+    let monthIndex = now.getMonth ();
+
+    // always start with next month's list, so we show it as soon as it happens
+    if (++monthIndex >= 12) {
+        monthIndex -= 12;
+        ++year;
+    }
+
+    // build the select
     let parent = document.getElementById("salesListSelectParent");
     let select = Bedrock.Html.Builder.begin ("select", { id: "salesListSelect", event: { change: selectSalesList } });
-    for (let i = 0; i < 12; ++i) {
+    for (let i = 0; i <= 12; ++i) {
         let monthName = months[monthIndex];
         select.begin ("option", { value: monthIndex + "/" + year, innerHTML: ucFirst (monthName) + " "  + year }).end ();
         if (--monthIndex < 0) {
