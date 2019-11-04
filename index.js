@@ -228,7 +228,12 @@ let processSalesList = function (queryResult, month, year, sourceUrl) {
                     // try to find the maker, Stanley is obvious
                     if (currentRecord.id.match (/^ST\d+$/)) {
                         currentRecord.maker = "Stanley";
-                        currentRecord.title = currentRecord.maker + " " + currentRecord.title;
+                        let hashIndex = currentRecord.title.indexOf ("#");
+                        if (hashIndex >= 0) {
+                            currentRecord.title = currentRecord.title.replace ("#", currentRecord.maker + " #");;
+                        } else {
+                            currentRecord.title = currentRecord.maker + " - " + currentRecord.title;
+                        }
                     } else {
                         // is it in the title?
                     }
