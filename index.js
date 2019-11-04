@@ -1,12 +1,45 @@
 "use strict";
 
-let Html = Bedrock.Html;
-
 let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+
+let main = function () {
+    // get the current date
+    let now = new Date ();
+    let year = now.getFullYear ();
+    let monthIndex = now.getMonth ();
+
+    // the first one will automatically be selected...
+    buildSalesListSelect (monthIndex, year);
+    findSalesList (monthIndex + 1, year);
+};
+
+let formatMoney = function (amount) {
+    const decimalCount = 2;
+    const decimal = ".";
+    const thousands = ",";
+
+    let i = parseInt (amount = Math.abs (Number (amount) || 0).toFixed (decimalCount)).toString ();
+    let j = (i.length > 3) ? i.length % 3 : 0;
+
+    let dollars = (j ? i.substr (0, j) + thousands : '') + i.substr (j).replace (/(\d{3})(?=\d)/g, "$1" + thousands) + (decimalCount ? decimal + Math.abs (amount - i).toFixed (decimalCount).slice (2) : "");
+    return "$" + ((amount < 0) ? "(" + dollars + ")" : dollars);
+};
+
+let getImageId = function (url) {
+    let matches = url.match (/([^\/]*)\.jpg/i);
+    if ((matches != null) && (matches.length > 1)) {
+        //console.log ("Image Id = " + matches[1]);
+        return matches[1];
+    }
+    return "UNKNOWN";
+};
+
+let ucFirst = function (string) {
+    return string.charAt (0).toUpperCase () + string.slice (1);
+};
 
 let fallback = true;
 let findSalesList = function (monthIndex, year) {
-
     // set the LOADING... display
     let loadingDiv = document.getElementById ("loading-div");
     loadingDiv.innerHTML = "LOADING...";
@@ -17,7 +50,7 @@ let findSalesList = function (monthIndex, year) {
     // year in front until we find something or run out of ideas
     let monthName = months[monthIndex];
     let length = monthName.length;
-    console.log ("Finding sales list for " + monthName.charAt (0).toUpperCase () + monthName.slice (1) + " " + year);
+    console.log ("Finding sales list for " + ucFirst (monthName) + " " + year);
 
     // generate the list of names to try
     let tryNames = [];
@@ -37,14 +70,14 @@ let findSalesList = function (monthIndex, year) {
             let sourceUrl = "http://www.supertool.com/forsale/" + tryName + "list.html";
             Bedrock.Http.get ("https://bedrock.brettonw.com/api?event=fetch&url=" + sourceUrl, function (tryResult) {
                 if (tryResult.status === "ok") {
-                    console.log ("Found sales list for " + monthName.charAt (0).toUpperCase () + monthName.slice (1) + " " + year + " at " + sourceUrl);
+                    console.log ("Found sales list for " + ucFirst (monthName) + " " + year + " at " + sourceUrl);
                     processSalesList (tryResult, monthName, year, sourceUrl);
                 } else {
                     tryNext (++tryIndex);
                 }
             });
         } else {
-            console.log ("Coudn't find sales list for " + monthName.charAt (0).toUpperCase () + monthName.slice (1) + " " + year);
+            console.log ("Coudn't find sales list for " + ucFirst (monthName) + " " + year);
             loadingDiv.innerHTML = "FAILED";
 
             // in some cases, it might be into a given month but the new list has not been
@@ -68,7 +101,7 @@ let buildSalesListSelect = function (monthIndex, year) {
     let select = Bedrock.Html.Builder.begin ("select", { id: "salesListSelect", event: { change: selectSalesList } });
     for (let i = 0; i < 12; ++i) {
         let monthName = months[monthIndex];
-        select.begin ("option", { value: monthIndex + "/" + year, innerHTML: monthName.charAt (0).toUpperCase () + monthName.slice (1) + " "  + year }).end ();
+        select.begin ("option", { value: monthIndex + "/" + year, innerHTML: ucFirst (monthName) + " "  + year }).end ();
         if (--monthIndex < 0) {
             monthIndex += 12;
             --year;
@@ -77,42 +110,10 @@ let buildSalesListSelect = function (monthIndex, year) {
     parent.appendChild(select.end ());
 };
 
-let main = function () {
-    // get the current date
-    let now = new Date ();
-    let year = now.getFullYear ();
-    let monthIndex = now.getMonth ();
-
-    // the first one will automatically be selected...
-    buildSalesListSelect (monthIndex, year);
-    findSalesList(monthIndex + 1, year);
-};
-
 let selectSalesList = function () {
     let selectElement = document.getElementById ("salesListSelect");
     let selection = selectElement.options[selectElement.selectedIndex].value.split ("/");
     findSalesList (selection[0], selection[1]);
-};
-
-let formatMoney = function (amount) {
-    const decimalCount = 2;
-    const decimal = ".";
-    const thousands = ",";
-
-    let i = parseInt (amount = Math.abs (Number (amount) || 0).toFixed (decimalCount)).toString ();
-    let j = (i.length > 3) ? i.length % 3 : 0;
-
-    let dollars = (j ? i.substr (0, j) + thousands : '') + i.substr (j).replace (/(\d{3})(?=\d)/g, "$1" + thousands) + (decimalCount ? decimal + Math.abs (amount - i).toFixed (decimalCount).slice (2) : "");
-    return "$" + ((amount < 0) ? "(" + dollars + ")" : dollars);
-};
-
-let getImageId = function (url) {
-    let matches = url.match (/([^\/]*)\.jpg/i);
-    if ((matches != null) && (matches.length > 1)) {
-        //console.log ("Image Id = " + matches[1]);
-        return matches[1];
-    }
-    return "UNKNOWN";
 };
 
 let processSalesList = function (queryResult, month, year, sourceUrl) {
@@ -219,7 +220,7 @@ let processSalesList = function (queryResult, month, year, sourceUrl) {
                     // get the title from the beginning of the description
                     let semicolon = currentRecord.description.indexOf (";");
                     if (semicolon > 0) {
-                        currentRecord.title = currentRecord.description.substring (0, semicolon);
+                        currentRecord.title = ucFirst (currentRecord.description.substring (0, semicolon));
                         currentRecord.description = currentRecord.description.substring (semicolon + 1).trim ();
                     } else {
                         currentRecord.title = "UNTITLED";
@@ -230,7 +231,7 @@ let processSalesList = function (queryResult, month, year, sourceUrl) {
                         currentRecord.maker = "Stanley";
                         let hashIndex = currentRecord.title.indexOf ("#");
                         if (hashIndex >= 0) {
-                            currentRecord.title = currentRecord.title.replace ("#", currentRecord.maker + " #");;
+                            currentRecord.title = currentRecord.title.replace ("#", currentRecord.maker + " #");
                         } else {
                             currentRecord.title = currentRecord.maker + " - " + currentRecord.title;
                         }
@@ -256,6 +257,12 @@ let processSalesList = function (queryResult, month, year, sourceUrl) {
                         } else {
                             //console.log ("NO POSITION FOUND (length): " + position);
                         }
+                    }
+
+                    // if we got all this way and there is no position in the record, strip the
+                    // colon at the end of the description
+                    if (!("position" in currentRecord)) {
+                        currentRecord.description = currentRecord.description.replace (/:\s*$/, "");
                     }
 
                     // this finishes the record
@@ -304,7 +311,7 @@ let processSalesList = function (queryResult, month, year, sourceUrl) {
     }
 
     // build the image group displays by walking over the records in their natural order
-    target.appendChild (Bedrock.Html.Builder.begin ("h2").begin ("a", { href: sourceUrl, target: "_blank", style: { textDecoration: "none" }, title: "View original source", innerHTML: month.charAt (0).toUpperCase () + month.slice (1) + " " + year }).end ().end ());
+    target.appendChild (Bedrock.Html.Builder.begin ("h2").begin ("a", { href: sourceUrl, target: "_blank", style: { textDecoration: "none" }, title: "View original source", innerHTML: ucFirst (month) + " " + year }).end ().end ());
 
     for (let record of records) {
         let recordIds = {};
@@ -334,7 +341,7 @@ let processSalesList = function (queryResult, month, year, sourceUrl) {
                 let description = "<ul>";
                 for (let bullet of bullets) {
                     bullet = bullet.trim ();
-                    description += "<li>" + bullet.charAt (0).toUpperCase () + bullet.slice (1) + "</li>";
+                    description += "<li>" + ucFirst (bullet) + "</li>";
                 }
                 description += "<ul>";
 
