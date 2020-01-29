@@ -454,16 +454,19 @@
             target.removeChild (target.lastElementChild);
         }
 
-        // build the image group displays by walking over the records in their natural order
+        // add a title line with the name of the list, and a link to the original page
         target.appendChild (Bedrock.Html.Builder.begin ("h2").begin ("a", { href: sourceUrl, target: "_blank", style: { textDecoration: "none" }, title: "View original source", innerHTML: ucFirst (month) + " " + year }).end ().end ());
 
+        // build the image group displays by walking over the records in their natural order
         for (let record of records) {
+            // start by walking the graph to get all the images and records that will be part of this cluster
             let recordIds = {};
             let imageIds = {};
             if (collectImageIdsFromRecordId (record.id, recordIds, imageIds) > 0) {
                 let cluster = Bedrock.Html.Builder.begin ("div", { style: { margin: "5px 0", padding: "8px", borderWidth: "1px", borderColor: "gray", borderStyle: "solid" } });
                 //console.log ("CLUSTER");
 
+                // emit all the images for this cluster
                 let clusterImages = cluster.begin ("div", { style: { verticalAlign: "middle", textAlign: "center" } });
                 for (let imageId of Object.keys (imageIds).sort ()) {
                     //console.log ("  Image Id: " + imageId);
@@ -475,6 +478,7 @@
                 }
                 clusterImages.end ();
 
+                // emit all the records from this cluster
                 let clusterRecords = cluster.begin ("div").begin ("table");
                 for (let recordId of Object.keys (recordIds).sort ()) {
                     //console.log ("  Record Id: " + recordId);
@@ -502,11 +506,13 @@
                         .end ();
                 }
                 clusterRecords.end ().end ();
+
+                // incrementally add the cluster, so te user doesn't feel like the page takes a long time to load
                 target.appendChild (cluster.end ());
             }
         }
 
-        // set the target
+        // finish up, turn off the "loading" text, and show the top of the list
         console.log ("Finished");
         document.getElementById ("loading-div").style.display = "none";
         target.scrollIntoView ();
