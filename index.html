@@ -117,7 +117,7 @@
     <hr style="margin:16px;">
     <div id="loading-div" style="display: none;">LOADING...</div>
     <div id="image-group-display" style="font-size: 12px;"></div>
-    <div class="content-center footer">Built with <a target="_blank" class="footer-link" href="https://bedrock.brettonw.com">Bedrock</a><br>Repackaging software &copy; 2019 Bretton Wade (see License and source on <a target="_blank" class="footer-link" href="https://github.com/brettonw/Supertool">Github</a>)<br>Supertool website and source data &copy; 1998-2019 Patrick Leach</div>
+    <div class="content-center footer">Built with <a target="_blank" class="footer-link" href="https://bedrock.brettonw.com">Bedrock</a><br>Repackaging software &copy; 2019-2020 Bretton Wade (see License and source on <a target="_blank" class="footer-link" href="https://github.com/brettonw/Supertool">Github</a>)<br>Supertool website and source data &copy; 1998-2020 Patrick Leach</div>
 </body>
 </html>
 
@@ -126,6 +126,7 @@
     "use strict";
 
     let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+    let LIST = "list";
 
     let main = function () {
         // the first one will automatically be selected...
@@ -158,6 +159,16 @@
         return string.charAt (0).toUpperCase () + string.slice (1);
     };
 
+    let permuteList = function (input, output) {
+        // a list of 3 items is a simple exercise, if we add more, this function will be a bit more interesting
+        output.push (input[0] + input[1] + input[2]);
+        output.push (input[0] + input[2] + input[1]);
+        output.push (input[1] + input[0] + input[2]);
+        output.push (input[1] + input[2] + input[0]);
+        output.push (input[2] + input[0] + input[1]);
+        output.push (input[2] + input[1] + input[0]);
+    };
+
     let fallback = true;
     let findSalesList = function (monthIndex, year) {
         // set the LOADING... display
@@ -177,8 +188,7 @@
         let tryLength = 3;
         while (tryLength <= length) {
             let tryName = monthName.substring (0, tryLength);
-            tryNames.push (tryName + year);
-            tryNames.push (year + tryName);
+            permuteList ([LIST, year, tryName], tryNames);
             ++tryLength;
         }
 
@@ -187,14 +197,12 @@
         let tryNext = function (tryIndex) {
             if (tryIndex < tryNames.length) {
                 let tryName = tryNames[tryIndex];
-                let sourceUrl = "http://www.supertool.com/forsale/" + tryName + "list.html";
+                let sourceUrl = "http://www.supertool.com/forsale/" + tryName + ".html";
                 Bedrock.Http.get ("https://bedrock.brettonw.com/api?event=fetch&url=" + sourceUrl, function (tryResult) {
                     if (tryResult.status === "ok") {
                         console.log ("Found sales list for " + ucFirst (monthName) + " " + year + " at " + sourceUrl);
                         processSalesList (tryResult, monthName, year, sourceUrl);
-
                         document.getElementById ("salesListSelect").value = monthIndex + "/" + year;
-
                     } else {
                         tryNext (++tryIndex);
                     }
