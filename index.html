@@ -126,7 +126,7 @@
     "use strict";
 
     let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
-    let LIST = ["list", "llist"];
+    let lists = ["list", "llist"];
 
     /* http://www.supertool.com/forsale/2020mayllist.html */
 
@@ -187,13 +187,11 @@
 
         // generate the list of names to try
         let tryNames = [];
-        let tryLength = 3;
-        while (tryLength <= length) {
-            let tryName = monthName.substring (0, tryLength);
-            for (var list of LIST) {
+        for (var list of lists) {
+            for (var tryLength = 3; tryLength <= length; ++tryLength) {
+                let tryName = monthName.substring (0, tryLength);
                 permuteList([list, year, tryName], tryNames);
             }
-            ++tryLength;
         }
 
         // loop over the list until we are done trying - yes, it's recursive, but the call stack
