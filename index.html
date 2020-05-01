@@ -126,7 +126,9 @@
     "use strict";
 
     let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
-    let LIST = "list";
+    let LIST = ["list", "llist"];
+
+    /* http://www.supertool.com/forsale/2020mayllist.html */
 
     let main = function () {
         // the first one will automatically be selected...
@@ -188,7 +190,9 @@
         let tryLength = 3;
         while (tryLength <= length) {
             let tryName = monthName.substring (0, tryLength);
-            permuteList ([LIST, year, tryName], tryNames);
+            for (var list of LIST) {
+                permuteList([list, year, tryName], tryNames);
+            }
             ++tryLength;
         }
 
