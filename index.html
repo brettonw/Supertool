@@ -81,13 +81,28 @@
         font-family: Times, serif;
         margin: 12px 0;
     }
+
+    .warning {
+        color: #800;
+        border-style: solid;
+        border-color: #a00;
+        border-width: 1px;
+        background-color: #fcc;
+        width: 100%;
+        font-family: sans-serif;
+        font-size: 14px;
+        text-align: center;
+        margin: 10px auto;
+        padding: 20px
+    }
 </style>
 
 <body onload="main ();">
+<div class="warning">NOTE: This web page is not affiliated with or approved by Patrick Leach or Supertool/The Superior Works. It reads his used tools sales page for the selected month and presents it in a format that is meant to be more usable.</div>
 
-<div style="color: #800; border-style: solid; border-color: #a00; border-width: 1px; background-color: #fcc; width: 100%; font-family: sans-serif; font-size: 14px; text-align: center; margin: 10px auto; padding: 20px">NOTE: This web page is not affiliated with or approved by Patrick Leach or Supertool/The Superior Works. It reads his used tools sales page for the selected month and presents it in a format that is meant to be more usable.</div>
+<div id="insecure-warning" class="warning" style="display: none;">WARNING: This secure page references insecure content from the http://supertool.com website. You must change your browser settings for this site to enable insecure content (<a href="https://experienceleague.adobe.com/docs/target/using/experiences/vec/troubleshoot-composer/mixed-content.html?lang=en">Learn more</a>).</div>
 
-<div style="text-align: center;"><a target="_blank" href="http://www.supertool.com"><img src="http://www.supertool.com/logo.jpg" /></a></div>
+<div style="text-align: center;"><a target="_blank" href="https://www.supertool.com"><img id="logo-image" src="http://www.supertool.com/logo.jpg" /></a></div>
 
 <div class="par">If you have questions about what the Stanley numbers are, you can look the planes up on <a target="_blank" href="http://www.supertool.com/StanleyBG/stan0.htm">Blood&Gore (www.supertool.com/StanleyBG)</a>.</div>
 
@@ -127,12 +142,22 @@
 <script>
     "use strict";
 
+
     let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
     let lists = ["list", "llist"];
 
     /* http://www.supertool.com/forsale/2020mayllist.html */
 
     let main = function () {
+        // look to see if the page loaded with insecure content
+        let logoImage = document.getElementById("logo-image");
+        if (logoImage.complete && (logoImage.offsetHeight == 0)) {
+            let insecureWarning = document.getElementById("insecure-warning");
+            insecureWarning.style.display = "block";
+            logoImage.style.display = "none";
+            return;
+        }
+
         // the first one will automatically be selected...
         buildSalesListSelect ();
         selectSalesList ();
