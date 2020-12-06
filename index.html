@@ -151,7 +151,7 @@
     let main = function () {
         // look to see if the page loaded with insecure content
         let logoImage = document.getElementById("logo-image");
-        if (logoImage.complete && (logoImage.offsetWidth < >50)) {
+        if (logoImage.complete && (logoImage.offsetWidth < 50)) {
             let insecureWarning = document.getElementById("insecure-warning");
             insecureWarning.style.display = "block";
             logoImage.style.display = "none";
