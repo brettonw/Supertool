@@ -144,6 +144,20 @@
 
 
     let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+    let aliases = {
+        january: ["january", "first", "1st"],
+        february: ["february", "second", "2nd"],
+        march: ["march", "third", "3rd"],
+        april: ["april", "fourth", "4th"],
+        may: ["may", "fifth", "5th"],
+        june: ["june", "sixth", "6th"],
+        july: ["july", "seventh", "7th"],
+        august: ["august", "eighth", "8th"],
+        september: ["september", "ninth", "9th"],
+        october: ["october", "tenth", "10th"],
+        november: ["november", "eleventh", "11th"],
+        december: ["december", "twelfth", "12th"]
+    };
     let lists = ["list", "llist"];
 
     /* http://www.supertool.com/forsale/2020mayllist.html */
@@ -209,7 +223,6 @@
         // we'll start with the straightforward one, and then start shortening the month name and alternating
         // year in front until we find something or run out of ideas
         let monthName = months[monthIndex];
-        let length = monthName.length;
         console.log ("Finding sales list for " + ucFirst (monthName) + " " + year);
 
         // look to see if we've found this list before, and saved it as a cookie
@@ -234,9 +247,11 @@
             // generate the list of names to try
             let tryNames = [];
             for (var list of lists) {
-                for (var tryLength = 3; tryLength <= length; ++tryLength) {
-                    let tryName = monthName.substring(0, tryLength);
-                    permuteList([list, year, tryName], tryNames);
+                for (let alias of aliases[monthName]) {
+                    for (let tryLength = 3; tryLength <= alias.length; ++tryLength) {
+                        let tryName = alias.substring (0, tryLength);
+                        permuteList ([list, year, tryName], tryNames);
+                    }
                 }
             }
 
