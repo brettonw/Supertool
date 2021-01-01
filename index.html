@@ -247,6 +247,10 @@
             // generate the list of names to try
             let tryNames = [];
             for (var list of lists) {
+                // the site engages in a form of information warfare to hide the list until they
+                // send the email. in january 2021, they switched from variations of the month name
+                // to "first", so we added aliases of the monthname to facilitate searching other
+                // variations.
                 for (let alias of aliases[monthName]) {
                     for (let tryLength = 3; tryLength <= alias.length; ++tryLength) {
                         let tryName = alias.substring (0, tryLength);
