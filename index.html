@@ -268,16 +268,21 @@
                 if (tryIndex < tryNames.length) {
                     let tryName = tryNames[tryIndex];
                     let trySourceUrl = "http://www.supertool.com/forsale/" + tryName + ".html";
-                    Bedrock.Http.get("https://bedrock.brettonw.com/api?event=fetch&url=" + trySourceUrl, function (tryResult) {
-                        if (tryResult.status === "ok") {
-                            console.log("Found sales list for " + ucFirst(monthName) + " " + year + " at " + trySourceUrl);
-                            Bedrock.Cookie.set(cookieName, trySourceUrl);
-                            processSalesList(tryResult, monthName, year, trySourceUrl);
-                            document.getElementById("salesListSelect").value = monthIndex + "/" + year;
-                        } else {
-                            tryNext(++tryIndex);
-                        }
-                    });
+                    try {
+                        Bedrock.Http.get("https://bedrock.brettonw.com/api?event=fetch&url=" + trySourceUrl, function (tryResult) {
+                            if (tryResult.status === "ok") {
+                                console.log("Found sales list for " + ucFirst(monthName) + " " + year + " at " + trySourceUrl);
+                                Bedrock.Cookie.set(cookieName, trySourceUrl);
+                                processSalesList(tryResult, monthName, year, trySourceUrl);
+                                document.getElementById("salesListSelect").value = monthIndex + "/" + year;
+                            } else {
+                                tryNext(++tryIndex);
+                            }
+                        });
+                    }
+                    catch(error) {
+                        tryNext(++tryIndex);
+                    }
                 } else {
                     let message = "Couldn't find sales list for " + ucFirst(monthName) + " " + year;
                     console.log(message);
