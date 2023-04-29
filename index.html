@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Supertool</title>
-    <link rel="stylesheet" href="https://bedrock.brettonw.com/dist/latest/bedrock.css?0"/>
+    <link rel="stylesheet" href="bedrock.css?0"/>
     <link rel="icon" type="image/png" href="icon.png?01"/>
 </head>
 
@@ -138,7 +138,10 @@
 </body>
 </html>
 
+<!--
 <script src="https://bedrock.brettonw.com/dist/latest/bedrock-debug.js?01"></script>
+-->
+<script src="bedrock-debug.js?01"></script>
 <script>
     "use strict";
 
@@ -232,7 +235,7 @@
         let cookieName = monthName + year;
         let sourceUrl = Bedrock.Cookie.get (cookieName);
         if (sourceUrl !== "") {
-            Bedrock.Http.get("https://bedrock.brettonw.com/api?event=fetch&url=" + sourceUrl, function (tryResult) {
+            Bedrock.Http.get("https://bedrock.brettonw.com/api?event=fetch&url=" + sourceUrl, (tryResult) => {
                 if (tryResult.status === "ok") {
                     console.log("Found previously saved sales list for " + ucFirst(monthName) + " " + year + " at " + sourceUrl);
                     processSalesList(tryResult, monthName, year, sourceUrl);
@@ -267,22 +270,21 @@
             let tryNext = function (tryIndex) {
                 if (tryIndex < tryNames.length) {
                     let tryName = tryNames[tryIndex];
+                    loadingDiv.innerHTML = "LOADING... ("+ tryIndex + " - " + tryName + ")";
+                    //console.log("(" + tryIndex + ") " + tryName);
                     let trySourceUrl = "http://www.supertool.com/forsale/" + tryName + ".html";
-                    try {
-                        Bedrock.Http.get("https://bedrock.brettonw.com/api?event=fetch&url=" + trySourceUrl, function (tryResult) {
-                            if (tryResult.status === "ok") {
-                                console.log("Found sales list for " + ucFirst(monthName) + " " + year + " at " + trySourceUrl);
-                                Bedrock.Cookie.set(cookieName, trySourceUrl);
-                                processSalesList(tryResult, monthName, year, trySourceUrl);
-                                document.getElementById("salesListSelect").value = monthIndex + "/" + year;
-                            } else {
-                                tryNext(++tryIndex);
-                            }
-                        });
-                    }
-                    catch(error) {
-                        tryNext(++tryIndex);
-                    }
+                    Bedrock.Http.get("https://bedrock.brettonw.com/api?event=fetch&url=" + trySourceUrl,  (tryResult) => {
+                        if (tryResult.status === "ok") {
+                            console.log("Found sales list for " + ucFirst(monthName) + " " + year + " at " + trySourceUrl);
+                            Bedrock.Cookie.set(cookieName, trySourceUrl);
+                            processSalesList(tryResult, monthName, year, trySourceUrl);
+                            document.getElementById("salesListSelect").value = monthIndex + "/" + year;
+                        } else {
+                            setTimeout(() => { tryNext(++tryIndex); }, 100);
+                        }
+                    }, (request) => {
+                        setTimeout(() => { tryNext(++tryIndex); }, 100);
+                    });
                 } else {
                     let message = "Couldn't find sales list for " + ucFirst(monthName) + " " + year;
                     console.log(message);
