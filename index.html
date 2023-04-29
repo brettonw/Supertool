@@ -268,6 +268,8 @@
             // loop over the list until we are done trying - yes, it's recursive, but the call stack
             // depth shouldn't be but so bad...
             let tryNext = function (tryIndex) {
+                let errorHandler = function(request, eventName) {
+                }
                 if (tryIndex < tryNames.length) {
                     let tryName = tryNames[tryIndex];
                     loadingDiv.innerHTML = "LOADING... ("+ tryIndex + " - " + tryName + ")";
